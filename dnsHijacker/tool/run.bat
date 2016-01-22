@@ -1,1 +1,0 @@
-phantomjs sniffer.js

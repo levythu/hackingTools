@@ -1,7 +1,6 @@
 'use strict';
 
 var proxyDns = require('./proxy_dns.js'),
-	inject = require('./inject.js'),
 	http = require('http'),
 	https = require('https'),
 	zlib = require('zlib');
@@ -93,7 +92,6 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 		// 网页注入！
 		//
 		var charset = content_type.split('charset=')[1];
-		data = inject.injectHtml(data, charset, secure);
 
 		//
 		// 返回注入后的网页（尽可能压缩）
@@ -213,31 +211,8 @@ function onClientRequest(clientReq, clientRes) {
 	var domain = host.match(/[^:]*/) + '';
 	proxyDns.addWebDomain(domain);
 
-	//
-	// inject code
-	//
-	var url = clientReq.headers['host'] + clientReq.url;
-	var js = inject.injectJs(url);
-	if (js) {
-		var data = new Buffer(js),
-			sec = 1,     // 非调试状态下使用更大的数字 （365 * 24 * 3600）
-			exp = new Date(Date.now() + sec * 1000),
-			now = new Date().toGMTString();
+	proxyRequest(clientReq, clientRes);
 
-		clientRes.writeHead(200, {
-			'Content-Type': 'text/javascript',
-			'Content-Length': data.length,
-
-			'Cache-Control': 'max-age=' + sec,
-			'Expires': exp.toGMTString(),
-			'Date': now,
-			'Last-Modified': now
-		});
-		clientRes.end(data);
-	}
-	else {
-		proxyRequest(clientReq, clientRes);
-	}
 }
 
 
@@ -257,6 +232,7 @@ exports.addPort = function(port) {
 	svr.on('error', function() {
 		console.log('[WEB] CANNOT listen %d', port);
 	});
+
 }
 
 exports.addHttpsUrl = function(url) {
