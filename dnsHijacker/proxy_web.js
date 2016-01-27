@@ -94,30 +94,13 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 		var charset = content_type.split('charset=')[1];
 		data=inject.injectHtml(data, charset);
 
-		//
-		// 返回注入后的网页（尽可能压缩）
-		//
-		var usrEnc = clientReq.headers['accept-encoding'];
-		if (usrEnc) {
-			if (/gzip/i.test(usrEnc)) {
-				usrEnc = zlib.gzip;
-			}
-			else if (/deflate/i.test(usrEnc)) {
-				usrEnc = zlib.deflate;
-			}
-		}
 
-		if (usrEnc) {
-			usrEnc(data, function(err, bin) {
-				err? BadReq() : flush(bin);
-			});
-		}
-		else {
-			flush(data);
-		}
+		flush(data);
+
 
 		function flush(data) {
 			resHeader['content-length'] = data.length;
+			delete resHeader['content-encoding'];
 			clientRes.writeHead(serverRes.statusCode, resHeader);
 			clientRes.end(data);
 		}
