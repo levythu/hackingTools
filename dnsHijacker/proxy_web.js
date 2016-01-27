@@ -3,7 +3,8 @@
 var proxyDns = require('./proxy_dns.js'),
 	http = require('http'),
 	https = require('https'),
-	zlib = require('zlib');
+	zlib = require('zlib'),
+	inject=require('./inject');
 
 
 var https_url = {};
@@ -37,6 +38,7 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 				clientReq.headers['host'] + clientReq.url,
 				newUrl
 			);
+			return;
 		}
 	}
 
@@ -51,13 +53,11 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 		cookie[i] = cookie[i].replace('; Secure', '');
 	}
 
-	//
-	// 不是html文件直接转发
-	//
 	var content_type = resHeader['content-type'] || '';
 	var mime = content_type.split(';')[0];
 
-	if (mime != 'text/html') {
+	if (mime!="text/html")
+	{
 		clientRes.writeHead(serverRes.statusCode, resHeader);
 		serverRes.pipe(clientRes);
 		return;
@@ -92,6 +92,7 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 		// 网页注入！
 		//
 		var charset = content_type.split('charset=')[1];
+		data=inject.injectHtml(data, charset);
 
 		//
 		// 返回注入后的网页（尽可能压缩）
@@ -194,6 +195,7 @@ function proxyRequest(clientReq, clientRes) {
 		clientRes.writeHeader(404);
 		clientRes.end();
 	});
+
 
 	clientReq.pipe(proxy);
 }
